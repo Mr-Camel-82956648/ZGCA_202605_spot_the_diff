@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Spot the Difference Editor</title>
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../assets/css/editor.css">
+</head>
+<body>
+  <main class="editor-shell">
+    <header class="editor-header panel">
+      <div>
+        <div class="eyebrow">Utility Tool</div>
+        <h1>差异点编辑器</h1>
+        <p>支持拖拽平移、滚轮缩放和真实半径投影，适合在真实建筑素材上更精确地录点与调半径。</p>
+      </div>
+      <div class="editor-header__links">
+        <a href="../index.html">返回主游戏</a>
+        <a href="../index.html?debug=1">查看 Debug 模式</a>
+      </div>
+    </header>
+
+    <section class="editor-layout">
+      <aside class="editor-sidebar">
+        <div class="panel form-panel">
+          <h2>载入关卡</h2>
+          <label class="field">
+            <span>已有关卡</span>
+            <select id="levelSelect"></select>
+          </label>
+          <div class="row-actions">
+            <button id="loadSelectedLevelButton" class="button button--primary" type="button">载入所选关卡</button>
+            <button id="createBlankButton" class="button button--soft" type="button">新建空白配置</button>
+          </div>
+
+          <label class="field">
+            <span>levelId</span>
+            <input id="levelIdInput" type="text" placeholder="level-01">
+          </label>
+          <label class="field">
+            <span>标题</span>
+            <input id="titleInput" type="text" placeholder="关卡标题">
+          </label>
+          <label class="field">
+            <span>摘要</span>
+            <textarea id="summaryInput" rows="3" placeholder="可选，用于完整关卡对象导出"></textarea>
+          </label>
+          <label class="field">
+            <span>图片 A</span>
+            <input id="imageAInput" type="text" placeholder="../assets/img/levels/level-01/scene-a.png">
+          </label>
+          <label class="field">
+            <span>图片 B</span>
+            <input id="imageBInput" type="text" placeholder="../assets/img/levels/level-01/scene-b.png">
+          </label>
+          <label class="field">
+            <span>默认半径</span>
+            <input id="radiusInput" type="number" step="0.005" min="0.01" max="0.2" value="0.05">
+          </label>
+
+          <div class="row-actions row-actions--wrap">
+            <button id="applyImagesButton" class="button button--primary" type="button">应用图片</button>
+            <button id="undoPointButton" class="button button--soft" type="button">删除上一个点</button>
+            <button id="clearPointsButton" class="button button--ghost" type="button">清空当前点位</button>
+          </div>
+        </div>
+
+        <div class="panel status-panel">
+          <h2>录点状态</h2>
+          <div class="status-line"><span>预览状态</span><code id="loadStatusLabel">等待载入</code></div>
+          <div class="status-line"><span>点位数量</span><strong id="pointCount">0</strong></div>
+          <div class="status-line"><span>当前选中</span><code id="activePointLabel">-</code></div>
+          <div class="status-line"><span>最后点击</span><code id="lastPointLabel">-</code></div>
+          <div class="status-line"><span>提示</span><small>拖拽移动，滚轮缩放；点击图片新增点，点击列表切换当前编辑点。</small></div>
+          <p id="editorStatusMessage" class="status-note">填写图片路径后点击“应用图片”，或直接载入已有配置。</p>
+        </div>
+      </aside>
+
+      <section class="editor-main">
+        <div class="preview-grid">
+          <article class="panel preview-card">
+            <div class="preview-card__header">
+              <h2>Scene A</h2>
+              <span>拖拽 / 滚轮缩放 / 点击录点</span>
+            </div>
+            <div id="editorFrameA" class="editor-frame" data-board="A">
+              <img id="editorImageA" alt="编辑器图片 A">
+              <div id="editorOverlayA" class="editor-overlay"></div>
+              <div id="editorFrameStatusA" class="editor-frame__status">等待载入图片 A</div>
+            </div>
+          </article>
+
+          <article class="panel preview-card">
+            <div class="preview-card__header">
+              <h2>Scene B</h2>
+              <span>拖拽 / 滚轮缩放 / 点击录点</span>
+            </div>
+            <div id="editorFrameB" class="editor-frame" data-board="B">
+              <img id="editorImageB" alt="编辑器图片 B">
+              <div id="editorOverlayB" class="editor-overlay"></div>
+              <div id="editorFrameStatusB" class="editor-frame__status">等待载入图片 B</div>
+            </div>
+          </article>
+        </div>
+
+        <div class="panel point-list-panel">
+          <div class="point-list-panel__header">
+            <h2>差异点列表</h2>
+            <small>点击条目可选中，半径圈会同步高亮</small>
+          </div>
+          <div id="pointList" class="point-list"></div>
+        </div>
+
+        <div class="panel export-panel">
+          <div class="point-list-panel__header">
+            <h2>导出配置</h2>
+            <small>适合直接粘贴回 `data/levels.js`</small>
+          </div>
+
+          <div class="export-mode">
+            <button id="showDifferencesButton" class="export-mode__button export-mode__button--active" type="button">仅 differences</button>
+            <button id="showLevelButton" class="export-mode__button" type="button">完整关卡对象</button>
+          </div>
+
+          <textarea id="exportOutput" spellcheck="false"></textarea>
+
+          <div class="row-actions row-actions--wrap">
+            <button id="copyCurrentButton" class="button button--primary" type="button">复制当前输出</button>
+            <button id="refreshExportButton" class="button button--ghost" type="button">刷新导出</button>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="../data/levels.js"></script>
+  <script src="../assets/js/shared.js"></script>
+  <script src="../assets/js/editor.js"></script>
+</body>
+</html>

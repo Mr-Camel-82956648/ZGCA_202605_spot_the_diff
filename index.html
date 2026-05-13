@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Urban Echoes - Spot the Difference</title>
+  <meta name="description" content="建筑主题手机竖版 H5 找不同小游戏 MVP">
+  <link rel="icon" href="./assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./assets/css/styles.css">
+</head>
+<body>
+  <div class="ambient ambient--top"></div>
+  <div class="ambient ambient--middle"></div>
+  <div class="ambient ambient--bottom"></div>
+
+  <main class="app-shell">
+    <section id="homeScreen" class="screen screen--active home-screen">
+      <div class="home-stage">
+        <header class="home-header">
+          <div class="home-mark">SPOT THE DIFFERENCE</div>
+          <h1 class="home-series">ZGCA<br>CAMPUS</h1>
+        </header>
+
+        <div id="homeCarousel" class="home-carousel">
+          <button id="homePrevButton" class="home-arrow home-arrow--prev" type="button" aria-label="上一关">
+            <span></span>
+          </button>
+
+          <div class="home-preview-card">
+            <button id="homeLevelPreview" class="home-preview" type="button" aria-label="进入当前关卡">
+              <img id="homePreviewImage" alt="关卡预览">
+              <div class="home-preview__veil"></div>
+              <div id="homePreviewLock" class="home-preview__lock hidden" aria-hidden="true">
+                <span class="home-preview__lock-icon"></span>
+              </div>
+              <div id="homePreviewState" class="home-preview__state">OPEN</div>
+            </button>
+
+            <div class="home-preview-info">
+              <div id="homeLevelMeta" class="home-level-meta">关卡 [1/5] · 未完成</div>
+              <h2 id="homeLevelTitle" class="home-level-title">Level</h2>
+            </div>
+          </div>
+
+          <button id="homeNextButton" class="home-arrow home-arrow--next" type="button" aria-label="下一关">
+            <span></span>
+          </button>
+        </div>
+
+        <div id="homeLevelHint" class="home-level-hint" aria-label="关卡操作提示">
+          <span class="home-level-hint__line home-level-hint__line--primary">关卡内双指放大</span>
+          <span class="home-level-hint__line home-level-hint__line--primary">拖动图片查看细节</span>
+          <span class="home-level-hint__line home-level-hint__line--rule">每关找到 6 处不同即可过关</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="gameScreen" class="screen game-screen">
+      <header class="game-hud">
+        <button id="homeButton" class="hud-back" type="button" aria-label="返回首页">
+          <span></span>
+        </button>
+        <div id="hudCounter" class="hud-counter">0 / 0</div>
+      </header>
+
+      <div class="orbs-stack">
+        <div class="orb-wrap">
+          <div class="orb-frame orb-frame--loading" id="frameA" data-board="A" aria-label="图 A">
+            <img id="imageA" class="orb-image" alt="关卡图 A">
+            <div class="overlay-layer overlay-layer--found" id="foundLayerA"></div>
+            <div class="overlay-layer overlay-layer--fx" id="fxLayerA"></div>
+            <div class="overlay-layer overlay-layer--debug" id="debugLayerA"></div>
+            <div id="loadingA" class="orb-loading">LOADING</div>
+          </div>
+        </div>
+
+        <div class="orb-wrap">
+          <div class="orb-frame orb-frame--loading" id="frameB" data-board="B" aria-label="图 B">
+            <img id="imageB" class="orb-image" alt="关卡图 B">
+            <div class="overlay-layer overlay-layer--found" id="foundLayerB"></div>
+            <div class="overlay-layer overlay-layer--fx" id="fxLayerB"></div>
+            <div class="overlay-layer overlay-layer--debug" id="debugLayerB"></div>
+            <div id="loadingB" class="orb-loading">LOADING</div>
+          </div>
+        </div>
+      </div>
+
+      <aside id="debugPanel" class="debug-panel hidden">
+        <div class="debug-panel__row">
+          <span>Debug</span>
+          <strong>ON</strong>
+        </div>
+        <div class="debug-panel__row">
+          <span>最后点击</span>
+          <code id="debugLastClick">-</code>
+        </div>
+        <div class="debug-panel__row">
+          <span>命中结果</span>
+          <code id="debugLastHit">-</code>
+        </div>
+      </aside>
+    </section>
+
+    <section id="resultScreen" class="screen result-screen">
+      <div id="resultBackground" class="result-screen__background"></div>
+      <div class="result-screen__scrim"></div>
+      <div class="result-screen__content">
+        <div id="resultEyebrow" class="result-screen__eyebrow">ARCHIVE NOTE</div>
+        <h2 id="resultTitle">关卡完成</h2>
+        <p id="resultSubtitle" class="result-screen__subtitle">English Subtitle</p>
+      </div>
+      <div class="result-screen__footer">
+        <button id="resultNextButton" class="result-next" type="button">NEXT &gt;</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="./data/levels.js"></script>
+  <script src="./assets/js/shared.js"></script>
+  <script src="./assets/js/app.js"></script>
+</body>
+</html>
