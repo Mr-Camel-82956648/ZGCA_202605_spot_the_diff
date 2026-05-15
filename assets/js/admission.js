@@ -2,7 +2,7 @@
   var DEFAULT_CONFIG = {
     apiBaseUrl: "https://leaderboard.liruochen.cn",
     campaignId: "zgca-admission",
-    gameId: "zgca-spot-the-difference",
+    gameId: "zgca-spot-the-diff",
     timeoutMs: 5000
   };
 

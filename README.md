@@ -168,7 +168,7 @@ ZGCA_202605_spot_the_diff/
 
 - `apiBaseUrl`: `https://leaderboard.liruochen.cn`
 - `campaignId`: `zgca-admission`
-- `gameId`: `zgca-spot-the-difference`
+- `gameId`: `zgca-spot-the-diff`
 - `timeoutMs`: `5000`
 
 后续正式联调时，通常只需要优先确认或替换：
@@ -186,7 +186,7 @@ ZGCA_202605_spot_the_diff/
 ### 联调检查清单
 
 - 当前 `campaignId` 默认值是 `zgca-admission`。
-- 当前 `gameId` 仍是占位值 `zgca-spot-the-difference`，正式联调前需要替换或确认真实值。
+- 当前 `gameId` 默认值是 `zgca-spot-the-diff`，联调时需要确认后端已按这个真实值完成配置。
 - 真实链路需要通过 URL 传入 `user_id`。
 - 需要确认后端已经在对应 `campaignId` 下配置了这个 `gameId`。
 - 需要确认浏览器环境下对 `https://leaderboard.liruochen.cn` 的跨域访问正常。
