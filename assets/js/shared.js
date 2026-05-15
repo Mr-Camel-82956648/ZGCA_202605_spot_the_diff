@@ -138,6 +138,33 @@
     return new URLSearchParams(window.location.search);
   }
 
+  function createOneShotAudioPlayer(path, options) {
+    var volume = typeof options === "object" && typeof options.volume === "number"
+      ? clamp(options.volume, 0, 1)
+      : 1;
+    var unavailable = false;
+
+    return {
+      play: function () {
+        if (unavailable || !path || typeof window.Audio !== "function") {
+          return;
+        }
+
+        var audio = new window.Audio(path);
+        audio.preload = "auto";
+        audio.volume = volume;
+        audio.addEventListener("error", function () {
+          unavailable = true;
+        }, { once: true });
+
+        var playPromise = audio.play();
+        if (playPromise && playPromise.catch) {
+          playPromise.catch(function () {});
+        }
+      }
+    };
+  }
+
   window.SpotDiffShared = {
     clamp: clamp,
     distance: distance,
@@ -152,6 +179,7 @@
     formatNumber: formatNumber,
     copyText: copyText,
     showTemporaryClass: showTemporaryClass,
-    getQueryParams: getQueryParams
+    getQueryParams: getQueryParams,
+    createOneShotAudioPlayer: createOneShotAudioPlayer
   };
 })();

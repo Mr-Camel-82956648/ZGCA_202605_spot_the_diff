@@ -7,6 +7,7 @@
   var HOME_SWIPE_THRESHOLD = 28;
   var HOME_SWIPE_MAX_VERTICAL_RATIO = 1.1;
   var MAIN_THEME_PATH = "./assets/audio/bgm/main-theme.mp3";
+  var UI_CLICK_SFX_PATH = "./assets/audio/sfx/ui-click.mp3";
   var DEFAULT_REQUIRED_DIFFERENCES = 6;
   var HOME_SLOT_COUNT = 5;
   var RESERVED_SLOT_PREVIEW = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(
@@ -52,6 +53,7 @@
     this.audio = {
       path: MAIN_THEME_PATH,
       mainTheme: null,
+      uiClick: Shared.createOneShotAudioPlayer(UI_CLICK_SFX_PATH, { volume: 0.62 }),
       attempted: false,
       unavailable: false
     };
@@ -267,15 +269,18 @@
 
     if (this.refs.resetProgressButton) {
       this.refs.resetProgressButton.addEventListener("click", function () {
+        self.playUiClick();
         self.resetProgress();
       });
     }
 
     this.refs.homePrevButton.addEventListener("click", function () {
+      self.playUiClick();
       self.moveHomeSelection(-1);
     });
 
     this.refs.homeNextButton.addEventListener("click", function () {
+      self.playUiClick();
       self.moveHomeSelection(1);
     });
 
@@ -284,6 +289,7 @@
         self.state.homeSwipe.didSwipe = false;
         return;
       }
+      self.playUiClick();
       self.enterSelectedHomeLevel();
     });
 
@@ -308,10 +314,12 @@
     });
 
     this.refs.homeButton.addEventListener("click", function () {
+      self.playUiClick();
       self.goHome();
     });
 
     this.refs.resultNextButton.addEventListener("click", function () {
+      self.playUiClick();
       self.advanceFromResult();
     });
 
@@ -340,6 +348,13 @@
     window.addEventListener("resize", function () {
       self.renderScene();
     });
+  };
+
+  SpotDiffApp.prototype.playUiClick = function () {
+    if (!this.audio.uiClick) {
+      return;
+    }
+    this.audio.uiClick.play();
   };
 
   SpotDiffApp.prototype.applyDebugState = function () {
@@ -822,6 +837,8 @@
     if (!Shared.pointInCircle(localPoint, board.currentLayout.frameWidth, board.currentLayout.frameHeight)) {
       return;
     }
+
+    this.playUiClick();
 
     var normalizedPoint = this.localToImageNormalized(board, localPoint, board.currentLayout);
     var difference = this.findDifferenceAtPoint(board, normalizedPoint);

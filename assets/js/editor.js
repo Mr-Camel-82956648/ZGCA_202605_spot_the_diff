@@ -3,6 +3,7 @@
   var LEVELS = window.SPOT_DIFF_LEVELS || [];
   var TAP_THRESHOLD = 6;
   var DEFAULT_REQUIRED_DIFFERENCES = 6;
+  var UI_CLICK_SFX_PATH = "../assets/audio/sfx/ui-click.mp3";
 
   if (!Shared) {
     return;
@@ -115,6 +116,9 @@
       }
     };
     this.loadRequestId = 0;
+    this.audio = {
+      uiClick: Shared.createOneShotAudioPlayer(UI_CLICK_SFX_PATH, { volume: 0.62 })
+    };
 
     this.populateLevels();
     this.bindEvents();
@@ -246,10 +250,12 @@
     var self = this;
 
     this.refs.loadSelectedLevelButton.addEventListener("click", function () {
+      self.playUiClick();
       self.loadLevel(Number(self.refs.levelSelect.value || 0));
     });
 
     this.refs.createBlankButton.addEventListener("click", function () {
+      self.playUiClick();
       self.state = {
         levelId: "level-new",
         title: "新关卡",
@@ -273,6 +279,7 @@
     });
 
     this.refs.applyImagesButton.addEventListener("click", function () {
+      self.playUiClick();
       self.pullInputsIntoState();
       self.applyImages();
       self.refreshExport();
@@ -282,6 +289,7 @@
       if (!self.state.points.length) {
         return;
       }
+      self.playUiClick();
       self.state.points.pop();
       self.normalizeActivePointIndex();
       self.renderPoints();
@@ -289,6 +297,7 @@
     });
 
     this.refs.clearPointsButton.addEventListener("click", function () {
+      self.playUiClick();
       self.state.points = [];
       self.state.lastPoint = null;
       self.state.activePointIndex = null;
@@ -297,14 +306,17 @@
     });
 
     this.refs.showDifferencesButton.addEventListener("click", function () {
+      self.playUiClick();
       self.setExportMode("differences");
     });
 
     this.refs.showLevelButton.addEventListener("click", function () {
+      self.playUiClick();
       self.setExportMode("level");
     });
 
     this.refs.copyCurrentButton.addEventListener("click", function () {
+      self.playUiClick();
       Shared.copyText(self.refs.exportOutput.value).then(function () {
         self.refs.copyCurrentButton.textContent = "已复制";
         window.setTimeout(function () {
@@ -314,12 +326,14 @@
     });
 
     this.refs.refreshExportButton.addEventListener("click", function () {
+      self.playUiClick();
       self.refreshExport();
     });
 
     this.refs.pointList.addEventListener("click", function (event) {
       var removeButton = event.target.closest("[data-remove-index]");
       if (removeButton) {
+        self.playUiClick();
         var removeIndex = Number(removeButton.dataset.removeIndex);
         self.state.points.splice(removeIndex, 1);
         if (self.state.activePointIndex === removeIndex) {
@@ -335,6 +349,7 @@
 
       var item = event.target.closest("[data-point-index]");
       if (item) {
+        self.playUiClick();
         self.selectPoint(Number(item.dataset.pointIndex));
       }
     });
@@ -393,6 +408,13 @@
     window.addEventListener("resize", function () {
       self.renderPreviewPoints();
     });
+  };
+
+  EditorApp.prototype.playUiClick = function () {
+    if (!this.audio.uiClick) {
+      return;
+    }
+    this.audio.uiClick.play();
   };
 
   EditorApp.prototype.setExportMode = function (mode) {
@@ -714,6 +736,8 @@
     if (!this.state.ready || !board.currentLayout) {
       return;
     }
+
+    this.playUiClick();
 
     var point = this.localToImageNormalized(board, localPoint, board.currentLayout);
     var radius = Shared.clamp(Number(this.refs.radiusInput.value || 0.05), 0.01, 0.2);
