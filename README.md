@@ -183,6 +183,35 @@ ZGCA_202605_spot_the_diff/
 - 当本地所有开放关卡全部通关时，如果当前存在 `user_id`，应用会调用 `/api/admission/register_clear` 尝试登记当前小游戏已通关。
 - 如果云端已确认通关，或本次会话已经成功 / 已尝试登记过，前端会做去重保护，避免重复无脑上报。
 
+### 联调入口与线上结论
+
+- 线上联调地址：`https://gallery.liruochen.cn/zgca-spot-the-diff/`
+- 可直接通过 `?user_id=test-xxx` 进入 admission 联调模式，例如 `https://gallery.liruochen.cn/zgca-spot-the-diff/?user_id=test-fix-a`
+- 不带 `user_id` 时，页面保持匿名单机模式，只使用本地进度
+
+已完成的线上主链路验证结论：
+
+- 带 `user_id` 访问时会正确请求 `game_status`
+- 新用户初始状态可返回 `cleared: false`
+- 当前用户真实完成全部开放关卡后会触发 `register_clear`
+- `register_clear` 返回成功后，该用户的 `game_status` 会更新为 `cleared: true`
+
+### 本地进度存储约定
+
+- 本地逐关进度现在按 `user_id` 分桶存储，而不是所有用户共用一个固定 key
+- 匿名模式存储 key：`spot-diff-progress-v3::anonymous`
+- 带用户模式存储 key：`spot-diff-progress-v3::<user_id>`
+- 带 `user_id` 的模式不会继承旧固定 key `spot-diff-progress-v3`
+- 旧固定 key `spot-diff-progress-v3` 只保留给匿名模式做兼容回退读取，不再作为带 `user_id` 模式的进度来源
+- 这条约定的目的，是避免同一浏览器下不同 `user_id` 共用逐关进度，并避免旧本地全通缓存误触发新用户的 admission 登记
+
+### register_clear 触发约定
+
+- `register_clear` 不是刷新页面就触发
+- `register_clear` 不是切换到另一个 `user_id` 就触发
+- 只有当前 `user_id` 在自己的本地进度桶中，真实满足“当前开放关卡全部完成”时，才允许触发 `register_clear`
+- 如果新 `user_id` 的专属本地桶为空，即使匿名桶或其他用户桶里已经全通，也不应自动登记
+
 ### 联调检查清单
 
 - 当前 `campaignId` 默认值是 `zgca-admission`。
@@ -192,6 +221,14 @@ ZGCA_202605_spot_the_diff/
 - 需要确认浏览器环境下对 `https://leaderboard.liruochen.cn` 的跨域访问正常。
 - 需要分别验证 `/api/admission/game_status` 和 `/api/admission/register_clear` 的真实返回。
 - 当前云端只同步“小游戏整体通关状态”，本地仍保存单关进度。
+
+### 推荐手测步骤
+
+1. 使用一个全新的测试用户访问线上地址，例如 `?user_id=test-fix-c`，先确认页面初始化后只发出 `game_status`，且返回 `cleared: false`。
+2. 打开浏览器 `F12`，在 `Network` 中过滤 `game_status` 与 `register_clear`，观察 admission 请求是否按预期触发。
+3. 在新用户尚未完成全部开放关卡前刷新页面，确认不会因为旧本地缓存或切换用户而自动触发 `register_clear`。
+4. 使用两个不同测试用户分别验证隔离性，例如先让 `test-fix-a` 通关，再切换到 `test-fix-b`，确认 `test-fix-b` 不继承前者的本地逐关进度，且初始 `game_status` 仍为 `cleared: false`。
+5. 让某个测试用户在自己的本地桶内真实完成全部开放关卡，确认这时才会发出 `register_clear`，并在后续查询中看到 `cleared: true`。
 
 ## 改什么功能先看哪个文件
 
