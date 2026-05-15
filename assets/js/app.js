@@ -1,5 +1,6 @@
 (function () {
   var Shared = window.SpotDiffShared;
+  var Admission = window.SpotDiffAdmission;
   var LEVELS = window.SPOT_DIFF_LEVELS || [];
   var STORAGE_KEY = "spot-diff-progress-v3";
   var TAP_THRESHOLD = 6;
@@ -50,6 +51,20 @@
     this.params = Shared.getQueryParams();
     this.debugMode = this.params.get("debug") === "1";
     this.progress = this.loadProgress();
+    this.accessContext = Admission
+      ? Admission.parseAccessContext(window.location)
+      : {
+        userId: null,
+        hasUserId: false,
+        mode: "single-player",
+        config: null
+      };
+    this.admissionSync = Admission
+      ? new Admission.AdmissionSync({
+        context: this.accessContext,
+        logger: this.createAdmissionLogger()
+      })
+      : null;
     this.audio = {
       path: MAIN_THEME_PATH,
       mainTheme: null,
@@ -148,6 +163,8 @@
     } else {
       this.showScreen("home");
     }
+
+    this.bootstrapAdmissionState();
   }
 
   SpotDiffApp.prototype.loadProgress = function () {
@@ -355,6 +372,52 @@
       return;
     }
     this.audio.uiClick.play();
+  };
+
+  SpotDiffApp.prototype.createAdmissionLogger = function () {
+    var self = this;
+
+    return function (level, message, meta) {
+      if (!window.console || !self.accessContext || !self.accessContext.hasUserId) {
+        return;
+      }
+
+      var method = level === "warn" || level === "error" ? "warn" : "info";
+      if (typeof window.console[method] !== "function") {
+        method = "log";
+      }
+      window.console[method]("[admission]", message, meta || "");
+    };
+  };
+
+  SpotDiffApp.prototype.bootstrapAdmissionState = function () {
+    var self = this;
+
+    if (!this.admissionSync) {
+      return;
+    }
+
+    this.admissionSync.bootstrap().then(function () {
+      self.maybeSyncAdmissionClear();
+    });
+  };
+
+  SpotDiffApp.prototype.hasClearedAllOpenLevels = function () {
+    if (!Admission) {
+      return false;
+    }
+
+    return Admission.hasClearedAllPlayableLevels(LEVELS, this.progress.completedLevelIds);
+  };
+
+  SpotDiffApp.prototype.maybeSyncAdmissionClear = function () {
+    if (!this.admissionSync) {
+      return;
+    }
+
+    this.admissionSync.maybeRegisterClear({
+      isAllLevelsCleared: this.hasClearedAllOpenLevels()
+    });
   };
 
   SpotDiffApp.prototype.applyDebugState = function () {
@@ -906,6 +969,7 @@
     this.progress.lastLevelIndex = this.state.currentLevelIndex;
     this.state.homeLevelIndex = this.state.currentLevelIndex;
     this.saveProgress();
+    this.maybeSyncAdmissionClear();
     this.renderHome();
     this.clearPendingResult();
     this.state.clearTimer = window.setTimeout(function () {
