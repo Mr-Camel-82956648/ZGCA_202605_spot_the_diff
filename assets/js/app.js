@@ -2,7 +2,8 @@
   var Shared = window.SpotDiffShared;
   var Admission = window.SpotDiffAdmission;
   var LEVELS = window.SPOT_DIFF_LEVELS || [];
-  var STORAGE_KEY = "spot-diff-progress-v3";
+  var STORAGE_KEY_BASE = "spot-diff-progress-v3";
+  var ANONYMOUS_PROGRESS_BUCKET = "anonymous";
   var TAP_THRESHOLD = 6;
   var RESULT_DELAY_MS = 520;
   var HOME_SWIPE_THRESHOLD = 28;
@@ -50,7 +51,6 @@
   function SpotDiffApp() {
     this.params = Shared.getQueryParams();
     this.debugMode = this.params.get("debug") === "1";
-    this.progress = this.loadProgress();
     this.accessContext = Admission
       ? Admission.parseAccessContext(window.location)
       : {
@@ -59,6 +59,7 @@
         mode: "single-player",
         config: null
       };
+    this.progress = this.loadProgress();
     this.admissionSync = Admission
       ? new Admission.AdmissionSync({
         context: this.accessContext,
@@ -167,38 +168,76 @@
     this.bootstrapAdmissionState();
   }
 
-  SpotDiffApp.prototype.loadProgress = function () {
-    var defaults = {
+  SpotDiffApp.prototype.createDefaultProgress = function () {
+    return {
       unlockedIndex: Math.max(LEVELS.length - 1, 0),
       completedLevelIds: [],
       lastLevelIndex: 0
     };
+  };
+
+  SpotDiffApp.prototype.getProgressBucketId = function () {
+    if (this.accessContext && this.accessContext.hasUserId && this.accessContext.userId) {
+      return this.accessContext.userId;
+    }
+
+    return ANONYMOUS_PROGRESS_BUCKET;
+  };
+
+  SpotDiffApp.prototype.getProgressStorageKey = function () {
+    return STORAGE_KEY_BASE + "::" + this.getProgressBucketId();
+  };
+
+  SpotDiffApp.prototype.readProgressValue = function (storageKey) {
+    if (!storageKey) {
+      return null;
+    }
+
+    return window.localStorage.getItem(storageKey);
+  };
+
+  SpotDiffApp.prototype.parseProgress = function (raw) {
+    var saved = JSON.parse(raw || "null");
+    if (!saved) {
+      return null;
+    }
+
+    return {
+      unlockedIndex: Math.max(LEVELS.length - 1, 0),
+      completedLevelIds: Array.isArray(saved.completedLevelIds) ? saved.completedLevelIds : [],
+      lastLevelIndex: typeof saved.lastLevelIndex === "number" ? Math.min(saved.lastLevelIndex, LEVELS.length - 1) : 0
+    };
+  };
+
+  SpotDiffApp.prototype.loadProgress = function () {
+    var defaults = this.createDefaultProgress();
 
     try {
-      var saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "null");
-      if (!saved) {
-        return defaults;
+      var scopedRaw = this.readProgressValue(this.getProgressStorageKey());
+      var scopedProgress = this.parseProgress(scopedRaw);
+      if (scopedProgress) {
+        return scopedProgress;
       }
-      return {
-        unlockedIndex: Math.max(LEVELS.length - 1, 0),
-        completedLevelIds: Array.isArray(saved.completedLevelIds) ? saved.completedLevelIds : [],
-        lastLevelIndex: typeof saved.lastLevelIndex === "number" ? Math.min(saved.lastLevelIndex, LEVELS.length - 1) : 0
-      };
+
+      if (this.getProgressBucketId() === ANONYMOUS_PROGRESS_BUCKET) {
+        var legacyProgress = this.parseProgress(this.readProgressValue(STORAGE_KEY_BASE));
+        if (legacyProgress) {
+          return legacyProgress;
+        }
+      }
+
+      return defaults;
     } catch (error) {
       return defaults;
     }
   };
 
   SpotDiffApp.prototype.saveProgress = function () {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(this.progress));
+    window.localStorage.setItem(this.getProgressStorageKey(), JSON.stringify(this.progress));
   };
 
   SpotDiffApp.prototype.resetProgress = function (options) {
-    this.progress = {
-      unlockedIndex: Math.max(LEVELS.length - 1, 0),
-      completedLevelIds: [],
-      lastLevelIndex: 0
-    };
+    this.progress = this.createDefaultProgress();
     this.state.homeLevelIndex = 0;
     this.saveProgress();
     if (!(options && options.skipRender)) {
